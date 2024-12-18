@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -6,18 +7,6 @@ from pydantic import BaseModel
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import MinMaxScaler
 import joblib
-
-# Load the dataset for dietary recommendations
-data = pd.read_csv('.\\unique_indian_foods_dataset.csv', encoding='ISO-8859-1')
-columns = ['Food_items', 'Calories', 'Fats', 'Proteins', 'Iron', 'Carbohydrates', 'Fibre', 'VegNovVeg']
-dataset = data[columns].copy()
-
-# Load the trained models
-random_forest_model = joblib.load('random_forest_model.pkl')
-xgb_model = joblib.load('xgb_model.pkl')
-
-# Define daily max limits for each nutrient
-max_list = [2000, 100, 200, 3500, 325, 40]
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -30,6 +19,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Load the dataset for dietary recommendations
+data_path = os.path.join(os.path.dirname(__file__), "unique_indian_foods_dataset.csv")
+data = pd.read_csv(data_path, encoding="ISO-8859-1")
+columns = ['Food_items', 'Calories', 'Fats', 'Proteins', 'Iron', 'Carbohydrates', 'Fibre', 'VegNovVeg']
+dataset = data[columns].copy()
+
+# Load the trained models
+rf_model_path = os.path.join(os.path.dirname(__file__), "random_forest_model.pkl")
+xgb_model_path = os.path.join(os.path.dirname(__file__), "xgb_model.pkl")
+random_forest_model = joblib.load(rf_model_path)
+xgb_model = joblib.load(xgb_model_path)
+
+# Define daily max limits for each nutrient
+max_list = [2000, 100, 200, 3500, 325, 40]
 
 # Define Pydantic models for input data
 class ModelInput(BaseModel):
@@ -64,10 +68,10 @@ def extract_data(dataset, max_nutritional_values, veg_only=True):
     extracted_data = dataset.copy()
     for column, maximum in zip(extracted_data.columns[1:-1], max_nutritional_values):
         extracted_data = extracted_data[extracted_data[column] <= maximum]
-    
+
     if veg_only:
         extracted_data = extracted_data[extracted_data['VegNovVeg'] == 0]  # Assuming 0 is for vegetarian
-    
+
     return extracted_data
 
 # Function to scale the data
@@ -97,10 +101,10 @@ async def predict_random_forest(input_data: ModelInput):
     try:
         # Extract features from the input data
         input_features = np.array([[input_data.feature1, input_data.feature2, input_data.feature3, input_data.feature4/18, input_data.feature5]])
-        
+
         # Make a prediction
         prediction = random_forest_model.predict(input_features)
-        
+
         # Return the prediction as a string
         return {"prediction": prediction[0]}
     except Exception as e:
@@ -151,6 +155,5 @@ async def get_recommendations(nutrition_values: NutritionValues):
     recommendations = recommend(dataset, input_data, max_list, nutrition_values.veg_only)  # Pass veg_only to the recommend function
     return {"recommendations": recommendations}
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Vercel requires an ASGI app object
+app = app
