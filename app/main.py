@@ -21,14 +21,14 @@ app.add_middleware(
 )
 
 # Load the dataset for dietary recommendations
-data_path = os.path.join(os.path.dirname(__file__), "unique_indian_foods_dataset.csv")
+data_path = os.path.join(os.path.dirname(__file__), "../unique_indian_foods_dataset.csv")
 data = pd.read_csv(data_path, encoding="ISO-8859-1")
 columns = ['Food_items', 'Calories', 'Fats', 'Proteins', 'Iron', 'Carbohydrates', 'Fibre', 'VegNovVeg']
 dataset = data[columns].copy()
 
 # Load the trained models
-rf_model_path = os.path.join(os.path.dirname(__file__), "random_forest_model.pkl")
-xgb_model_path = os.path.join(os.path.dirname(__file__), "xgb_model.pkl")
+rf_model_path = os.path.join(os.path.dirname(__file__), "../random_forest_model.pkl")
+xgb_model_path = os.path.join(os.path.dirname(__file__), "../xgb_model.pkl")
 random_forest_model = joblib.load(rf_model_path)
 xgb_model = joblib.load(xgb_model_path)
 
